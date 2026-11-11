@@ -1,0 +1,385 @@
+#!/usr/bin/env bash
+# cvescan: dependency CVE scan with a code-blind AI hand-off.
+#
+#   cvescan <project path>     detect -> sync -> scan, writes the report
+#   cvescan --all              rescan every project scanned before
+#   cvescan verify [project]   check the AI's analysis.json, render analysis.md
+#   cvescan status [project]   overview, or one project's history
+#
+# detect, sync and scan involve no AI. This wrapper takes no options that
+# change what a scan reports: those live in the user's config file, so
+# something that is only allowed to run `cvescan <path>` cannot relax a gate.
+#
+# Each step runs in a container with exactly the access it needs:
+#   detect  code read-only   no network
+#   sync    no code          network
+#   scan    code read-only   no network
+set -euo pipefail
+
+VERSION="0.1.0"
+DEFAULT_IMAGE="cvescan:${VERSION}"   # a release pins this by digest
+
+OUT_ROOT="${CVESCAN_HOME:-$HOME/cvescan}"
+STATE_ROOT="${CVESCAN_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/cvescan}"
+CONFIG_DIR="${CVESCAN_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/cvescan}"
+ENGINE="${CVESCAN_ENGINE:-docker}"   # docker | podman | native (development only, no isolation)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+KNOWN_ECOSYSTEMS="CRAN ConanCenter Go Hex Maven NuGet Packagist Pub PyPI RubyGems crates.io npm"
+
+INTERACTIVE=0
+if [ -t 0 ] && [ -t 1 ]; then INTERACTIVE=1; fi
+
+die()  { printf '%s\n' "$*" >&2; exit 2; }
+note() { printf '%s\n' "$*"; }
+
+usage() {
+  cat <<EOF
+cvescan ${VERSION}
+
+用法:
+  cvescan <專案路徑>       掃描專案,產出報表與 SBOM
+  cvescan --all            重掃所有掃過的專案(給排程用)
+  cvescan verify [專案]    檢查 AI 的 analysis.json,通過後產生 analysis.md
+  cvescan status [專案]    所有專案的總覽,或單一專案的歷程
+
+報表位置:${OUT_ROOT}/<專案>/latest/
+設定檔:  ${CONFIG_DIR}/config.toml(會影響掃描結果的選項只能寫在這裡)
+EOF
+}
+
+inside() {  # inside <path> <dir>: is path the dir itself or below it?
+  case "$1/" in "$2/"*) return 0 ;; esac
+  return 1
+}
+
+display_path() {
+  case "$1" in "$HOME"/*) printf '~%s' "${1#"$HOME"}" ;; *) printf '%s' "$1" ;; esac
+}
+
+image_ref() {
+  if [ -n "${CVESCAN_IMAGE:-}" ]; then printf '%s' "$CVESCAN_IMAGE"
+  elif [ -f "$STATE_ROOT/image" ]; then head -n 1 "$STATE_ROOT/image"
+  else printf '%s' "$DEFAULT_IMAGE"; fi
+}
+
+# core <net:on|off> <tty:tty|plain> <subcommand> [name=hostpath[:ro] ...] -- [core args]
+# name is one of: src db state out config state-root
+core() {
+  local net="$1" tty="$2" sub="$3"; shift 3
+  local specs=()
+  while [ $# -gt 0 ] && [ "$1" != "--" ]; do specs+=("$1"); shift; done
+  [ "${1:-}" = "--" ] && shift
+  local spec name path mode
+  if [ "$ENGINE" = native ]; then
+    local args=()
+    for spec in ${specs[@]+"${specs[@]}"}; do
+      name="${spec%%=*}"; path="${spec#*=}"; path="${path%:ro}"
+      args+=("--$name" "$path")
+    done
+    local rc=0
+    CVESCAN_TZ_OFFSET="$(date +%z)" PYTHONPATH="$SCRIPT_DIR/core" python3 -m cvescan_core "$sub" ${args[@]+"${args[@]}"} "$@" || rc=$?
+    return "$rc"
+  fi
+  local cmd=("$ENGINE" run --rm --read-only --tmpfs "/tmp:rw,nosuid,size=1g"
+    --cap-drop ALL --security-opt no-new-privileges --pids-limit 512
+    --user "$(id -u):$(id -g)" -e HOME=/tmp -e "CVESCAN_TZ_OFFSET=$(date +%z)")
+  if [ "$net" = off ]; then
+    cmd+=(--network none)
+  else
+    # The steps with network (sync, update check) never see code. They honour
+    # the proxy and CA bundle of the calling shell, like any download tool.
+    local var value
+    for var in HTTPS_PROXY https_proxy HTTP_PROXY http_proxy NO_PROXY no_proxy; do
+      value="${!var:-}"
+      [ -n "$value" ] || continue
+      case "$var:$value" in
+        [Nn][Oo]_*) ;;                                              # NO_PROXY is a host list, pass as is
+        *://localhost[:/]*|*://localhost|*://127.*|*://\[::1\]*|*:localhost:*|*:127.*) continue ;;
+      esac                                                          # a proxy on this machine is not reachable from a container
+      cmd+=(-e "$var")
+    done
+    if [ -n "${SSL_CERT_FILE:-}" ] && [ -f "$SSL_CERT_FILE" ]; then
+      local ca
+      ca="$(cd "$(dirname "$SSL_CERT_FILE")" && pwd -P)/$(basename "$SSL_CERT_FILE")"   # a mount source must be absolute
+      if mountable "$ca"; then
+        cmd+=(--mount "type=bind,source=${ca},target=/etc/cvescan-ca.pem,readonly" -e "SSL_CERT_FILE=/etc/cvescan-ca.pem")
+      fi
+    fi
+  fi
+  [ "$tty" = tty ] && [ -t 1 ] && cmd+=(-t)
+  for spec in ${specs[@]+"${specs[@]}"}; do
+    name="${spec%%=*}"; path="${spec#*=}"; mode=""
+    case "$path" in *:ro) path="${path%:ro}"; mode=",readonly" ;; esac
+    [ -e "$path" ] || continue
+    mountable "$path" || die "拒絕   路徑含有逗號、引號或換行,container 無法掛載:${path}"
+    case "$name" in state-root) name="state" ;; esac
+    cmd+=(--mount "type=bind,source=${path},target=/${name}${mode}")
+  done
+  "${cmd[@]}" "$IMAGE" "$sub" "$@"
+}
+
+mountable() {  # --mount takes a comma-separated list: a path with these characters cannot be passed safely
+  case "$1" in *,*|*\"*|*"
+"*) return 1 ;; esac
+  return 0
+}
+
+# ---------------------------------------------------------------------------
+# Environment check (the old "doctor"): one line when fine, details when not.
+# ---------------------------------------------------------------------------
+require_engine() {
+  if [ "$ENGINE" = native ]; then
+    command -v python3 >/dev/null 2>&1 || die "環境   找不到 python3"
+    return 0
+  fi
+  command -v "$ENGINE" >/dev/null 2>&1 || die "環境   找不到 ${ENGINE}。請先安裝 Docker:https://docs.docker.com/get-docker/"
+  "$ENGINE" info >/dev/null 2>&1 || die "環境   ${ENGINE} 沒有在執行。請啟動 Docker Desktop,或執行 sudo systemctl start docker"
+  "$ENGINE" image inspect "$IMAGE" >/dev/null 2>&1 || die "環境   找不到映像 ${IMAGE}。請先執行 cvescan 原始碼目錄裡的 install.sh"
+}
+
+preflight() {
+  local parts=""
+  require_engine
+  if [ "$ENGINE" = native ]; then
+    parts="native(開發模式,沒有隔離)"
+  else
+    parts="${ENGINE} ✓"
+  fi
+  # The repository is called cvescan and so is the default reports folder: a
+  # clone in $HOME would otherwise fill up with reports, one `git add` from being published.
+  if [ -f "$OUT_ROOT/install.sh" ] && [ -d "$OUT_ROOT/core/cvescan_core" ]; then
+    die "拒絕   ${OUT_ROOT} 是 cvescan 的原始碼資料夾,不能拿來放報表。請把原始碼移到別處,或用 CVESCAN_HOME 指定報表資料夾"
+  fi
+  mkdir -p "$OUT_ROOT" "$STATE_ROOT/db" "$STATE_ROOT/projects" || die "環境   無法建立 ${OUT_ROOT} 或 ${STATE_ROOT}"
+  local free_kb free_gb
+  free_kb="$(df -Pk "$STATE_ROOT" 2>/dev/null | awk 'NR==2 {print $4}')"
+  if [ -n "$free_kb" ]; then
+    free_gb=$((free_kb / 1024 / 1024))
+    if [ "$free_gb" -lt 2 ]; then
+      die "環境   磁碟只剩 ${free_gb} GB(${STATE_ROOT}),漏洞資料庫需要至少 2 GB"
+    fi
+    parts="${parts}|磁碟 ${free_gb} GB ✓"
+  fi
+  note "環境   ${parts}|cvescan ${VERSION}"
+}
+
+# ---------------------------------------------------------------------------
+# Update check: ask a person, take it automatically when unattended.
+# ---------------------------------------------------------------------------
+check_update() {
+  local out status="" version="" image="" required="" unattended="" notes="" key value
+  out="$(core on plain update-check "config=${CONFIG_DIR}:ro" -- 2>/dev/null)" || return 0
+  while IFS='=' read -r key value; do
+    case "$key" in
+      status) status="$value" ;; version) version="$value" ;; image) image="$value" ;;
+      required) required="$value" ;; unattended) unattended="$value" ;; notes) notes="$value" ;;
+    esac
+  done <<EOF
+$out
+EOF
+  case "$status" in
+    unreachable) note "更新   無法檢查新版,略過"; return 0 ;;
+    available) ;;
+    *) return 0 ;;
+  esac
+  printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || return 0
+  printf '%s' "$image" | grep -Eq '^[A-Za-z0-9][A-Za-z0-9._/:-]*@sha256:[0-9a-f]{64}$' || return 0
+
+  local take=0 asked_file="$STATE_ROOT/update-asked"
+  if [ "$INTERACTIVE" = 1 ]; then
+    if [ "$required" != true ] && [ -f "$asked_file" ] && [ "$(head -n 1 "$asked_file")" = "$version" ]; then
+      note "更新   有新版 ${version}(已詢問過;想更新時重新執行 install.sh)"
+      return 0
+    fi
+    local answer=""
+    printf '更新   有新版 %s%s。要先更新再繼續嗎? [y/N] ' "$version" "${notes:+(${notes})}"
+    read -r answer || answer=""
+    case "$answer" in y|Y|yes|YES) take=1 ;; *) printf '%s\n' "$version" > "$asked_file" ;; esac
+  elif [ "$unattended" = true ]; then
+    take=1
+  else
+    note "更新   有新版 ${version},發布未滿冷卻期,暫不自動更新"
+  fi
+
+  if [ "$take" = 1 ]; then
+    if [ "$ENGINE" = native ]; then
+      note "更新   (開發模式不套用更新)"
+    elif "$ENGINE" pull "$image" >/dev/null 2>&1; then
+      printf '%s\n' "$image" > "$STATE_ROOT/image"
+      IMAGE="$image"
+      note "更新   已更新到 ${version}"
+    else
+      note "更新   下載 ${version} 失敗,沿用目前版本"
+    fi
+  fi
+  if [ "$required" = true ] && [ "$IMAGE" != "$image" ]; then
+    die "拒絕   目前的版本已不受支援,必須更新到 ${version} 才能掃描(重新執行 install.sh)"
+  fi
+  return 0
+}
+
+# ---------------------------------------------------------------------------
+project_name_for() {  # stable name for a path; a different path with the same basename gets a suffix
+  local path="$1" base name
+  base="$(basename "$path" | tr -c 'A-Za-z0-9._-' '-' | sed 's/^[-.]*//; s/-*$//')"
+  [ -n "$base" ] || base="project"
+  name="$base"
+  if [ -f "$STATE_ROOT/projects/$name/path" ] && [ "$(head -n 1 "$STATE_ROOT/projects/$name/path")" != "$path" ]; then
+    name="${base}-$(printf '%s' "$path" | cksum | cut -c1-6)"
+  fi
+  printf '%s' "$name"
+}
+
+scan_project() {
+  local given="$1" project
+  project="$(cd "$given" 2>/dev/null && pwd -P)" || { note "拒絕   找不到專案路徑:${given}"; return 2; }
+  mountable "$project" || { note "拒絕   專案路徑含有逗號、引號或換行,container 無法掛載:${project}"; return 2; }
+  local out_real state_real
+  out_real="$(cd "$OUT_ROOT" && pwd -P)"
+  state_real="$(cd "$STATE_ROOT" && pwd -P)"
+  local other
+  for other in "$out_real" "$state_real"; do
+    if inside "$other" "$project" || inside "$project" "$other"; then
+      note "拒絕   專案和 cvescan 的資料夾不能互相包含(專案:${project};${other})"
+      return 2
+    fi
+  done
+
+  local name state out
+  name="$(project_name_for "$project")"
+  state="$STATE_ROOT/projects/$name"
+  out="$OUT_ROOT/$name"
+  mkdir -p "$state" "$out"
+
+  local lock="$state/.lock"
+  if ! mkdir "$lock" 2>/dev/null; then
+    local pid=""
+    [ -f "$lock/pid" ] && pid="$(head -n 1 "$lock/pid")"
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+      note "拒絕   ${name} 正在被另一個 cvescan 掃描(pid ${pid})"
+      return 2
+    fi
+    rm -rf "$lock"; mkdir "$lock"
+  fi
+  printf '%s\n' "$$" > "$lock/pid"
+  # shellcheck disable=SC2064
+  trap "rm -rf '$lock'" EXIT
+
+  # [1/3] detect: code read-only, no network. Only ecosystem names come out.
+  local detected count="" ecosystems="" line
+  if ! detected="$(core off plain detect "src=${project}:ro" --)"; then
+    rm -rf "$lock"; trap - EXIT
+    note "無效   detect 失敗"
+    return 3
+  fi
+  while IFS= read -r line; do
+    line="$(printf '%s' "$line" | tr -d '\r')"
+    [ -n "$line" ] || continue
+    if [ -z "$count" ]; then count="$line"; continue; fi
+    case " $KNOWN_ECOSYSTEMS " in
+      *" $line "*) ecosystems="${ecosystems:+$ecosystems,}$line" ;;
+      *) note "拒絕   detect 回報了不認得的 ecosystem,停止"; rm -rf "$lock"; trap - EXIT; return 2 ;;
+    esac
+  done <<EOF
+$detected
+EOF
+  printf '%s' "$count" | grep -Eq '^[0-9]+$' || count=0
+  if [ -n "$ecosystems" ]; then
+    note "[1/3] detect  找到 $(printf '%s' "$ecosystems" | sed 's/,/、/g')(${count} 個 lockfile)"
+  else
+    note "[1/3] detect  找不到任何 lockfile"
+  fi
+
+  # [2/3] sync: network, no code. A failure here is judged by the scan gate.
+  note "[2/3] sync"
+  core on tty sync "db=${STATE_ROOT}/db" "config=${CONFIG_DIR}:ro" -- --ecosystems "$ecosystems" || true
+
+  # [3/3] scan: code read-only, no network.
+  local code=0
+  core off tty scan "src=${project}:ro" "db=${STATE_ROOT}/db:ro" "state=${state}" "out=${out}" "config=${CONFIG_DIR}:ro" \
+    -- --project "$name" --display-out "$(display_path "$out")" || code=$?
+  if [ "$code" = 0 ] || [ "$code" = 3 ]; then
+    printf '%s\n' "$project" > "$state/path"
+  fi
+  rm -rf "$lock"; trap - EXIT
+  return "$code"
+}
+
+scan_all() {
+  local worst=0 any=0 dir path code
+  for dir in "$STATE_ROOT"/projects/*/; do
+    [ -f "${dir}path" ] || continue
+    any=1
+    path="$(head -n 1 "${dir}path")"
+    note ""
+    note "== $(basename "$dir") =="
+    if [ ! -d "$path" ]; then
+      note "略過   找不到路徑 ${path}"
+      continue
+    fi
+    code=0
+    scan_project "$path" || code=$?
+    [ "$code" -gt "$worst" ] && worst="$code"
+  done
+  [ "$any" = 1 ] || note "還沒有掃過任何專案。先執行:cvescan <專案路徑>"
+  return "$worst"
+}
+
+project_from_cwd() {
+  local here out_real rest
+  here="$(pwd -P)"
+  out_real="$(cd "$OUT_ROOT" 2>/dev/null && pwd -P)" || return 1
+  case "$here/" in
+    "$out_real"/?*) rest="${here#"$out_real"/}"; printf '%s' "${rest%%/*}" ;;
+    *) return 1 ;;
+  esac
+}
+
+valid_name() { printf '%s' "$1" | grep -Eq '^[A-Za-z0-9._-]+$'; }
+
+# ---------------------------------------------------------------------------
+[ $# -ge 1 ] || { usage; exit 2; }
+IMAGE="$(image_ref)"
+for dir in "$OUT_ROOT" "$STATE_ROOT" "$CONFIG_DIR"; do
+  mountable "$dir" || die "拒絕   路徑含有逗號、引號或換行,container 無法掛載:${dir}"
+done
+
+case "$1" in
+  -h|--help) usage; exit 0 ;;
+  --version) note "cvescan ${VERSION}"; exit 0 ;;
+  verify)
+    [ $# -le 2 ] || die "用法:cvescan verify [專案]"
+    name="${2:-}"
+    [ -n "$name" ] || name="$(project_from_cwd)" || die "用法:cvescan verify <專案>(或在報表資料夾裡執行)"
+    valid_name "$name" || die "專案名稱不合法:${name}"
+    [ -d "$OUT_ROOT/$name/latest" ] || die "找不到 ${name} 的報表(${OUT_ROOT}/${name}/latest)。先執行:cvescan <專案路徑>"
+    require_engine
+    core off plain verify "state=${STATE_ROOT}/projects/${name}" "out=${OUT_ROOT}/${name}" -- --display-out "$(display_path "$OUT_ROOT/$name")"
+    ;;
+  status)
+    [ $# -le 2 ] || die "用法:cvescan status [專案]"
+    mkdir -p "$STATE_ROOT/projects"
+    require_engine
+    if [ -n "${2:-}" ]; then
+      valid_name "$2" || die "專案名稱不合法:$2"
+      core off plain status "state-root=${STATE_ROOT}/projects:ro" "config=${CONFIG_DIR}:ro" -- --project "$2"
+    else
+      core off plain status "state-root=${STATE_ROOT}/projects:ro" "config=${CONFIG_DIR}:ro" --
+    fi
+    ;;
+  --all)
+    [ $# -eq 1 ] || die "cvescan --all 不接受其他參數"
+    preflight
+    check_update
+    scan_all
+    ;;
+  -*)
+    die "cvescan 不接受選項 $1。會影響掃描結果的設定請寫在 ${CONFIG_DIR}/config.toml"
+    ;;
+  *)
+    [ $# -eq 1 ] || die "cvescan 一次只接受一個專案路徑。會影響掃描結果的設定請寫在 ${CONFIG_DIR}/config.toml"
+    preflight
+    check_update
+    scan_project "$1"
+    ;;
+esac

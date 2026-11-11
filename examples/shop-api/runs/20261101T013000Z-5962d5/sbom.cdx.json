@@ -1,0 +1,354 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "serialNumber": "urn:uuid:24e7667b-a8d2-511d-8241-684567c15c42",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-11-01T01:30:00Z",
+    "tools": [
+      {
+        "vendor": "cvescan",
+        "name": "cvescan",
+        "version": "0.1.0"
+      }
+    ],
+    "component": {
+      "type": "application",
+      "bom-ref": "project",
+      "name": "shop-api",
+      "version": "deps-5962d5d"
+    },
+    "properties": [
+      {
+        "name": "cvescan:scan-id",
+        "value": "20261101T013000Z-5962d5"
+      },
+      {
+        "name": "cvescan:scanner",
+        "value": "osv-scanner 2.7.1"
+      }
+    ]
+  },
+  "components": [
+    {
+      "type": "application",
+      "bom-ref": "lockfile:package-lock.json",
+      "name": "shop-api",
+      "properties": [
+        {
+          "name": "cvescan:lockfile",
+          "value": "package-lock.json"
+        },
+        {
+          "name": "cvescan:ecosystem",
+          "value": "npm"
+        },
+        {
+          "name": "cvescan:graph",
+          "value": "complete"
+        },
+        {
+          "name": "cvescan:requires:express",
+          "value": "4.17.1"
+        },
+        {
+          "name": "cvescan:requires:lodash",
+          "value": "^4.17.15"
+        },
+        {
+          "name": "cvescan:requires:cvescan-fixture-evil",
+          "value": "^1.0.0"
+        },
+        {
+          "name": "cvescan:requires:cvescan-fixture-devtool",
+          "value": "^2.0.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "package-lock.json#pkg:npm/accepts@1.3.7",
+      "name": "accepts",
+      "version": "1.3.7",
+      "purl": "pkg:npm/accepts@1.3.7",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "cvescan:lockfile",
+          "value": "package-lock.json"
+        },
+        {
+          "name": "cvescan:ecosystem",
+          "value": "npm"
+        },
+        {
+          "name": "cvescan:scope",
+          "value": "prod"
+        },
+        {
+          "name": "cvescan:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "package-lock.json#pkg:npm/body-parser@1.19.0",
+      "name": "body-parser",
+      "version": "1.19.0",
+      "purl": "pkg:npm/body-parser@1.19.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "cvescan:lockfile",
+          "value": "package-lock.json"
+        },
+        {
+          "name": "cvescan:ecosystem",
+          "value": "npm"
+        },
+        {
+          "name": "cvescan:scope",
+          "value": "prod"
+        },
+        {
+          "name": "cvescan:direct",
+          "value": "false"
+        },
+        {
+          "name": "cvescan:requires:qs",
+          "value": "6.7.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "package-lock.json#pkg:npm/cvescan-fixture-devtool@2.0.0",
+      "name": "cvescan-fixture-devtool",
+      "version": "2.0.0",
+      "purl": "pkg:npm/cvescan-fixture-devtool@2.0.0",
+      "scope": "excluded",
+      "properties": [
+        {
+          "name": "cvescan:lockfile",
+          "value": "package-lock.json"
+        },
+        {
+          "name": "cvescan:ecosystem",
+          "value": "npm"
+        },
+        {
+          "name": "cvescan:scope",
+          "value": "dev"
+        },
+        {
+          "name": "cvescan:direct",
+          "value": "true"
+        },
+        {
+          "name": "cvescan:requires:lodash-es",
+          "value": "^4.17.15"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "package-lock.json#pkg:npm/cvescan-fixture-evil@1.0.3",
+      "name": "cvescan-fixture-evil",
+      "version": "1.0.3",
+      "purl": "pkg:npm/cvescan-fixture-evil@1.0.3",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "cvescan:lockfile",
+          "value": "package-lock.json"
+        },
+        {
+          "name": "cvescan:ecosystem",
+          "value": "npm"
+        },
+        {
+          "name": "cvescan:scope",
+          "value": "prod"
+        },
+        {
+          "name": "cvescan:direct",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "package-lock.json#pkg:npm/express@4.17.1",
+      "name": "express",
+      "version": "4.17.1",
+      "purl": "pkg:npm/express@4.17.1",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "cvescan:lockfile",
+          "value": "package-lock.json"
+        },
+        {
+          "name": "cvescan:ecosystem",
+          "value": "npm"
+        },
+        {
+          "name": "cvescan:scope",
+          "value": "prod"
+        },
+        {
+          "name": "cvescan:direct",
+          "value": "true"
+        },
+        {
+          "name": "cvescan:requires:accepts",
+          "value": "~1.3.7"
+        },
+        {
+          "name": "cvescan:requires:body-parser",
+          "value": "1.19.0"
+        },
+        {
+          "name": "cvescan:requires:qs",
+          "value": "6.7.0"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "package-lock.json#pkg:npm/lodash@4.17.15",
+      "name": "lodash",
+      "version": "4.17.15",
+      "purl": "pkg:npm/lodash@4.17.15",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "cvescan:lockfile",
+          "value": "package-lock.json"
+        },
+        {
+          "name": "cvescan:ecosystem",
+          "value": "npm"
+        },
+        {
+          "name": "cvescan:scope",
+          "value": "prod"
+        },
+        {
+          "name": "cvescan:direct",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "package-lock.json#pkg:npm/lodash-es@4.17.15",
+      "name": "lodash-es",
+      "version": "4.17.15",
+      "purl": "pkg:npm/lodash-es@4.17.15",
+      "scope": "excluded",
+      "properties": [
+        {
+          "name": "cvescan:lockfile",
+          "value": "package-lock.json"
+        },
+        {
+          "name": "cvescan:ecosystem",
+          "value": "npm"
+        },
+        {
+          "name": "cvescan:scope",
+          "value": "dev"
+        },
+        {
+          "name": "cvescan:direct",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "package-lock.json#pkg:npm/qs@6.7.0",
+      "name": "qs",
+      "version": "6.7.0",
+      "purl": "pkg:npm/qs@6.7.0",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "cvescan:lockfile",
+          "value": "package-lock.json"
+        },
+        {
+          "name": "cvescan:ecosystem",
+          "value": "npm"
+        },
+        {
+          "name": "cvescan:scope",
+          "value": "prod"
+        },
+        {
+          "name": "cvescan:direct",
+          "value": "false"
+        }
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "project",
+      "dependsOn": [
+        "lockfile:package-lock.json"
+      ]
+    },
+    {
+      "ref": "lockfile:package-lock.json",
+      "dependsOn": [
+        "package-lock.json#pkg:npm/cvescan-fixture-devtool@2.0.0",
+        "package-lock.json#pkg:npm/cvescan-fixture-evil@1.0.3",
+        "package-lock.json#pkg:npm/express@4.17.1",
+        "package-lock.json#pkg:npm/lodash@4.17.15"
+      ]
+    },
+    {
+      "ref": "package-lock.json#pkg:npm/accepts@1.3.7",
+      "dependsOn": []
+    },
+    {
+      "ref": "package-lock.json#pkg:npm/body-parser@1.19.0",
+      "dependsOn": [
+        "package-lock.json#pkg:npm/qs@6.7.0"
+      ]
+    },
+    {
+      "ref": "package-lock.json#pkg:npm/cvescan-fixture-devtool@2.0.0",
+      "dependsOn": [
+        "package-lock.json#pkg:npm/lodash-es@4.17.15"
+      ]
+    },
+    {
+      "ref": "package-lock.json#pkg:npm/cvescan-fixture-evil@1.0.3",
+      "dependsOn": []
+    },
+    {
+      "ref": "package-lock.json#pkg:npm/express@4.17.1",
+      "dependsOn": [
+        "package-lock.json#pkg:npm/accepts@1.3.7",
+        "package-lock.json#pkg:npm/body-parser@1.19.0",
+        "package-lock.json#pkg:npm/qs@6.7.0"
+      ]
+    },
+    {
+      "ref": "package-lock.json#pkg:npm/lodash@4.17.15",
+      "dependsOn": []
+    },
+    {
+      "ref": "package-lock.json#pkg:npm/lodash-es@4.17.15",
+      "dependsOn": []
+    },
+    {
+      "ref": "package-lock.json#pkg:npm/qs@6.7.0",
+      "dependsOn": []
+    }
+  ]
+}

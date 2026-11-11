@@ -1,0 +1,14 @@
+{
+  "name": "shop-api",
+  "version": "2.4.0",
+  "private": true,
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "express": "4.17.1",
+    "lodash": "^4.17.15",
+    "cvescan-fixture-evil": "^1.0.0"
+  },
+  "devDependencies": {
+    "cvescan-fixture-devtool": "^2.0.0"
+  }
+}

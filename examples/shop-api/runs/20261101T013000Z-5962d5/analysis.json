@@ -1,0 +1,64 @@
+{
+  "schema_version": "1",
+  "scan_id": "20261101T013000Z-5962d5",
+  "model": "Claude",
+  "partial": false,
+  "summary": "最優先的是 cvescan-fixture-evil:它被通報為惡意套件,這是事故,不是版本問題。先移除,並把安裝過它的開發機與 CI 視為已暴露。其次是 lodash:它是正式環境的直接相依,一次升級就能解決兩項,而且修補版落在目前宣告的版本範圍內,成本很低,所以我把兩項從排程調高到本週。lodash-es 只經由開發工具帶入,更新 lockfile 即可,維持觀察。報表沒有提供這個服務是否對外、是否處理不受信任輸入的背景,所以沒有任何一項被調降。另外請留意:專案宣告的 Node 18 已停止支援,Dockerfile 的基底映像不在這次掃描範圍內。",
+  "findings": [
+    {
+      "finding_id": "F-8085ab2cd5",
+      "status": "affected",
+      "priority": "now",
+      "justification": null,
+      "context_refs": [],
+      "rationale": "這個套件被通報為惡意套件,公告描述它會在安裝時讀取環境變數並送往遠端主機。它是專案直接宣告的正式環境相依,只要執行過安裝,安裝當下的環境變數就可能已經外洩。處置是移除並做事故處理:安裝過它的開發機與 CI 都應視為已暴露,輪替它們用過的憑證。升級版本不能解決這個問題。",
+      "action": { "type": "remove" },
+      "cited_paths": [["shop-api", "cvescan-fixture-evil@1.0.3"]],
+      "questions": []
+    },
+    {
+      "finding_id": "F-9376dd2c7a",
+      "status": "affected",
+      "priority": "soon",
+      "justification": null,
+      "context_refs": [],
+      "rationale": "lodash 是正式環境的直接相依,安裝的版本在受影響範圍內。公告指出,當屬性名稱來自使用者輸入時,pick、set、update 等函式可被用來污染 Object 的 prototype。報表無法判斷程式是否這樣使用,但修補版落在專案宣告的版本範圍內,升級成本低,而且同一次升級也解決另一項 lodash 的漏洞,所以從排程調高到本週,不必先花時間確認用法。",
+      "action": { "type": "upgrade", "target_version": "4.17.19" },
+      "cited_paths": [["shop-api", "lodash@4.17.15"]],
+      "questions": []
+    },
+    {
+      "finding_id": "F-235dcdf6b9",
+      "status": "affected",
+      "priority": "soon",
+      "justification": null,
+      "context_refs": [],
+      "rationale": "同一個 lodash,公告指出 template 函式可被用來做命令注入。是否真的受影響取決於程式有沒有把不受信任的內容交給 template,這一點報表看不出來。因為修補版在宣告的版本範圍內、與上一項是同一個升級動作,直接升級比先調查更省事,所以同樣調高到本週。",
+      "action": { "type": "upgrade", "target_version": "4.17.21" },
+      "cited_paths": [["shop-api", "lodash@4.17.15"]],
+      "questions": []
+    },
+    {
+      "finding_id": "F-27998651e6",
+      "status": "affected",
+      "priority": "watch",
+      "justification": null,
+      "context_refs": [],
+      "rationale": "lodash-es 不是專案直接宣告的,而是由開發用的 cvescan-fixture-devtool 帶入,只出現在開發環境。上層要求的版本範圍已經涵蓋修補版,所以更新 lockfile 就能解決,不需要改任何宣告。影響面限於開發與建置流程,維持觀察;建議在處理 lodash 時順手更新。",
+      "action": { "type": "upgrade", "target_version": "4.17.20" },
+      "cited_paths": [["shop-api", "cvescan-fixture-devtool@2.0.0", "lodash-es@4.17.15"]],
+      "questions": []
+    },
+    {
+      "finding_id": "F-33535ff7bc",
+      "status": "affected",
+      "priority": "watch",
+      "justification": null,
+      "context_refs": [],
+      "rationale": "與上一項是同一個套件、同一條相依路徑,只在開發環境。template 的命令注入需要有不受信任的內容進到建置工具才會成立。修補版在上層允許的範圍內,更新 lockfile 即可,維持觀察。",
+      "action": { "type": "upgrade", "target_version": "4.17.21" },
+      "cited_paths": [["shop-api", "cvescan-fixture-devtool@2.0.0", "lodash-es@4.17.15"]],
+      "questions": []
+    }
+  ]
+}

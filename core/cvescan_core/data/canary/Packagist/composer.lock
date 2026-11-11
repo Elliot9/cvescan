@@ -1,0 +1,7 @@
+{
+  "content-hash": "cvescan-canary",
+  "packages": [
+    { "name": "guzzlehttp/guzzle", "version": "6.5.5", "require": { "php": ">=5.5" }, "type": "library" }
+  ],
+  "packages-dev": []
+}

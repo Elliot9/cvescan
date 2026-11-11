@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.5.0",
+  "id": "MAL-2026-900001",
+  "modified": "2026-11-01T00:00:00Z",
+  "published": "2026-11-01T00:00:00Z",
+  "summary": "Malicious code in cvescan-fixture-evil (npm)",
+  "details": "SYNTHETIC TEST FIXTURE, not a real advisory. The package name is made up for cvescan's own tests. It imitates the shape of an OpenSSF malicious-packages record: the package runs an install script that reads environment variables and sends them to a remote host.",
+  "affected": [
+    {
+      "package": { "ecosystem": "npm", "name": "cvescan-fixture-evil" },
+      "versions": ["1.0.3"]
+    }
+  ],
+  "references": [],
+  "database_specific": { "fixture": true }
+}

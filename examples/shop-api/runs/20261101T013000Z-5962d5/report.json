@@ -1,0 +1,601 @@
+{
+  "schema_version": "1",
+  "tool": {
+    "name": "cvescan",
+    "version": "0.1.0",
+    "scanner": "osv-scanner 2.7.1"
+  },
+  "scan_id": "20261101T013000Z-5962d5",
+  "scanned_at": "2026-11-01T01:30:00Z",
+  "lang": "zh-TW",
+  "project": {
+    "name": "shop-api",
+    "version": {
+      "kind": "deps",
+      "describe": "deps-5962d5d",
+      "commit": null,
+      "branch": null
+    }
+  },
+  "quality": {
+    "status": "complete",
+    "reasons": []
+  },
+  "db_snapshot": {
+    "synced_at": "2026-11-01T01:30:00Z",
+    "stale": false,
+    "stale_sources": [],
+    "sources": {
+      "osv:npm": {
+        "checked_at": "2026-11-01T01:30:00Z",
+        "fetched_at": "2026-11-01T01:30:00Z",
+        "last_modified": "Wed, 11 Nov 2026 06:01:22 GMT",
+        "sha256": "043b1957d080eaea9f70377ee111ca9214d10713927680741d53d8214072ce5f"
+      },
+      "kev": {
+        "state": "current",
+        "checked_at": "2026-11-01T01:30:00Z",
+        "last_modified": "Wed, 11 Nov 2026 06:01:22 GMT"
+      },
+      "epss": {
+        "state": "current",
+        "checked_at": "2026-11-01T01:30:00Z",
+        "last_modified": "Wed, 11 Nov 2026 06:01:22 GMT"
+      },
+      "eol:nodejs": {
+        "state": "current",
+        "checked_at": "2026-11-01T01:30:00Z",
+        "last_modified": "Wed, 11 Nov 2026 06:01:22 GMT"
+      },
+      "eol:php": {
+        "state": "current",
+        "checked_at": "2026-11-01T01:30:00Z",
+        "last_modified": "Wed, 11 Nov 2026 06:01:22 GMT"
+      },
+      "eol:python": {
+        "state": "current",
+        "checked_at": "2026-11-01T01:30:00Z",
+        "last_modified": "Wed, 11 Nov 2026 06:01:22 GMT"
+      }
+    }
+  },
+  "inputs": [
+    {
+      "ref": "package-lock.json",
+      "ecosystem": "npm",
+      "sha256": "5f39f532fa755bb72122249e8035bd7148f4fc3d59ab46a159a82e04f37f990e",
+      "packages": 8,
+      "graph": "complete",
+      "root_label": "shop-api"
+    }
+  ],
+  "sbom": {
+    "file": "sbom.cdx.json",
+    "sha256": "d66e6f46c3ac0dd08fed80c51e94a36fe8c02fd2b7af1b89d5f26d68f5a5aa81",
+    "components": 8,
+    "deps_fingerprint": "5962d5df3d6532fc098555b964771ac0f750c3786883ada0b4d488baea5f75de"
+  },
+  "context": {},
+  "runtimes": [
+    {
+      "runtime": "node",
+      "declared": "18.20.4",
+      "source": ".nvmrc",
+      "precision": "patch",
+      "cycle": "18",
+      "status": "eol",
+      "eol_date": "2025-04-30",
+      "latest": "18.20.8"
+    },
+    {
+      "runtime": "node",
+      "declared": ">=18",
+      "source": "package.json",
+      "precision": "range",
+      "cycle": null,
+      "status": "range",
+      "eol_date": null,
+      "latest": null
+    },
+    {
+      "runtime": "node",
+      "declared": "22.11.0",
+      "source": "Dockerfile",
+      "precision": "patch",
+      "cycle": "22",
+      "status": "behind",
+      "eol_date": "2027-04-30",
+      "latest": "22.21.0"
+    }
+  ],
+  "coverage": {
+    "blind_spots": [],
+    "notes": [
+      {
+        "kind": "os_layer_not_scanned",
+        "path": "Dockerfile",
+        "detail": "偵測到 Dockerfile:基底映像與 OS 套件不在掃描範圍"
+      },
+      {
+        "kind": "no_reachability",
+        "path": "",
+        "detail": "未做可達性分析:報表無法判斷有漏洞的程式碼是否真的被呼叫"
+      }
+    ],
+    "canary": {
+      "npm": "pass"
+    }
+  },
+  "summary": {
+    "open": 5,
+    "by_priority": {
+      "now": 1,
+      "soon": 0,
+      "scheduled": 2,
+      "watch": 2
+    },
+    "by_severity": {
+      "critical": 0,
+      "high": 4,
+      "medium": 0,
+      "low": 0,
+      "unknown": 0
+    },
+    "malware": 1,
+    "kev": 0,
+    "pending_analysis": 5,
+    "changes": {
+      "initial": 5,
+      "fixed": 0,
+      "new_advisory": 0,
+      "new_dependency": 0,
+      "gone": 0,
+      "withdrawn": 0,
+      "unchanged": 0
+    }
+  },
+  "actions": [
+    {
+      "action_id": "A-1",
+      "input": "package-lock.json",
+      "ecosystem": "npm",
+      "package": "cvescan-fixture-evil",
+      "from": "1.0.3",
+      "to": null,
+      "how": "remove",
+      "direct": true,
+      "scope": "prod",
+      "parents": [],
+      "via_direct": [],
+      "finding_ids": [
+        "F-8085ab2cd5"
+      ],
+      "unfixed": 0,
+      "declared_in": [],
+      "hint": "移除 cvescan-fixture-evil。當作已經中招處理:輪替這台機器與 CI 用過的憑證,檢查安裝時間前後的異常活動"
+    },
+    {
+      "action_id": "A-2",
+      "input": "package-lock.json",
+      "ecosystem": "npm",
+      "package": "lodash",
+      "from": "4.17.15",
+      "to": "4.17.21",
+      "how": "bump_direct",
+      "direct": true,
+      "scope": "prod",
+      "parents": [],
+      "via_direct": [],
+      "finding_ids": [
+        "F-235dcdf6b9",
+        "F-9376dd2c7a"
+      ],
+      "unfixed": 0,
+      "declared_in": [],
+      "hint": "npm install lodash@4.17.21"
+    },
+    {
+      "action_id": "A-3",
+      "input": "package-lock.json",
+      "ecosystem": "npm",
+      "package": "lodash-es",
+      "from": "4.17.15",
+      "to": "4.17.21",
+      "how": "relock",
+      "direct": false,
+      "scope": "dev",
+      "parents": [
+        "cvescan-fixture-devtool@2.0.0"
+      ],
+      "via_direct": [
+        "cvescan-fixture-devtool"
+      ],
+      "finding_ids": [
+        "F-27998651e6",
+        "F-33535ff7bc"
+      ],
+      "unfixed": 0,
+      "declared_in": [],
+      "hint": "npm update lodash-es(上層允許 4.17.21,更新 lockfile 即可)"
+    }
+  ],
+  "findings": [
+    {
+      "finding_id": "F-8085ab2cd5",
+      "lane": "malware",
+      "ecosystem": "npm",
+      "package": "cvescan-fixture-evil",
+      "ids": [
+        "MAL-2026-900001"
+      ],
+      "primary_id": "MAL-2026-900001",
+      "severity": {
+        "label": "unknown",
+        "cvss_score": null,
+        "cvss_vector": null
+      },
+      "exploitation": {
+        "kev": false,
+        "kev_date_added": null,
+        "epss": null,
+        "epss_percentile": null
+      },
+      "advisory": {
+        "summary": "Malicious code in cvescan-fixture-evil (npm)",
+        "details": "SYNTHETIC TEST FIXTURE, not a real advisory. The package name is made up for cvescan's own tests. It imitates the shape of an OpenSSF malicious-packages record: the package runs an install script that reads environment variables and sends them to a remote host.",
+        "cwe_ids": [],
+        "published": "2026-11-01T00:00:00Z",
+        "modified": "2026-11-01T00:00:00Z",
+        "references": []
+      },
+      "instances": [
+        {
+          "input": "package-lock.json",
+          "version": "1.0.3",
+          "scope": "prod",
+          "direct": true,
+          "declared_in": [],
+          "fixed_versions": [],
+          "recommended_fix": null,
+          "introduced_by": [
+            {
+              "path": [
+                "shop-api",
+                "cvescan-fixture-evil@1.0.3"
+              ],
+              "parent": "<root>",
+              "parent_requires": "^1.0.0",
+              "fix_in_range": null
+            }
+          ],
+          "parents_total": 1
+        }
+      ],
+      "baseline_priority": "now",
+      "baseline_reasons": [
+        "已通報為惡意套件"
+      ],
+      "first_seen": "2026-11-01T01:30:00Z",
+      "age_days": 0,
+      "basis": "1c4cef4ddeee2635",
+      "analysis_state": "pending",
+      "pending_reason": "new",
+      "change": "initial"
+    },
+    {
+      "finding_id": "F-9376dd2c7a",
+      "lane": "vulnerability",
+      "ecosystem": "npm",
+      "package": "lodash",
+      "ids": [
+        "GHSA-p6mc-m468-83gw",
+        "CVE-2020-8203"
+      ],
+      "primary_id": "GHSA-p6mc-m468-83gw",
+      "severity": {
+        "label": "high",
+        "cvss_score": 7.4,
+        "cvss_vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:H"
+      },
+      "exploitation": {
+        "kev": false,
+        "kev_date_added": null,
+        "epss": 0.0231,
+        "epss_percentile": 0.8912
+      },
+      "advisory": {
+        "summary": "Prototype Pollution in lodash",
+        "details": "Versions of lodash prior to 4.17.19 are vulnerable to Prototype Pollution. The functions `pick`, `set`, `setWith`, `update`, `updateWith`, and `zipObjectDeep` allow a malicious user to modify the prototype of Object if the property identifiers are user-supplied. Being affected by this issue requires manipulating objects based on user-provided property values or arrays.\n\nThis vulnerability causes the addition or modification of an existing property that will exist on all objects and may lead to Denial of Service or Code Execution under specific circumstances.",
+        "cwe_ids": [
+          "CWE-1321",
+          "CWE-770"
+        ],
+        "published": "2020-07-15T19:15:48Z",
+        "modified": "2025-08-12T21:43:38Z",
+        "references": [
+          "https://nvd.nist.gov/vuln/detail/CVE-2020-8203",
+          "https://github.com/github/advisory-database/pull/2884",
+          "https://github.com/lodash/lodash/commit/c84fe82760fb2d3e03a63379b297a1cc1a2fce12",
+          "https://github.com/lodash/lodash/issues/4744",
+          "https://github.com/lodash/lodash/issues/4874",
+          "https://github.com/lodash/lodash/wiki/Changelog#v41719"
+        ]
+      },
+      "instances": [
+        {
+          "input": "package-lock.json",
+          "version": "4.17.15",
+          "scope": "prod",
+          "direct": true,
+          "declared_in": [],
+          "fixed_versions": [
+            "4.17.19"
+          ],
+          "recommended_fix": "4.17.19",
+          "introduced_by": [
+            {
+              "path": [
+                "shop-api",
+                "lodash@4.17.15"
+              ],
+              "parent": "<root>",
+              "parent_requires": "^4.17.15",
+              "fix_in_range": true
+            }
+          ],
+          "parents_total": 1
+        }
+      ],
+      "baseline_priority": "scheduled",
+      "baseline_reasons": [
+        "CVSS 7.4",
+        "EPSS 2.3%"
+      ],
+      "first_seen": "2026-11-01T01:30:00Z",
+      "age_days": 0,
+      "basis": "2d1815bb711cc2f0",
+      "analysis_state": "pending",
+      "pending_reason": "new",
+      "change": "initial"
+    },
+    {
+      "finding_id": "F-235dcdf6b9",
+      "lane": "vulnerability",
+      "ecosystem": "npm",
+      "package": "lodash",
+      "ids": [
+        "GHSA-35jh-r3h4-6jhm",
+        "CVE-2021-23337"
+      ],
+      "primary_id": "GHSA-35jh-r3h4-6jhm",
+      "severity": {
+        "label": "high",
+        "cvss_score": 7.2,
+        "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H"
+      },
+      "exploitation": {
+        "kev": false,
+        "kev_date_added": null,
+        "epss": 0.00842,
+        "epss_percentile": 0.7421
+      },
+      "advisory": {
+        "summary": "Command Injection in lodash",
+        "details": "`lodash` versions prior to 4.17.21 are vulnerable to Command Injection via the template function.",
+        "cwe_ids": [
+          "CWE-77",
+          "CWE-94"
+        ],
+        "published": "2021-05-06T16:05:51Z",
+        "modified": "2025-08-12T21:44:24Z",
+        "references": [
+          "https://nvd.nist.gov/vuln/detail/CVE-2021-23337",
+          "https://cert-portal.siemens.com/productcert/pdf/ssa-637483.pdf",
+          "https://github.com/lodash/lodash/blob/ddfd9b11a0126db2302cb70ec9973b66baec0975/lodash.js#L14851",
+          "https://github.com/lodash/lodash/commit/3469357cff396a26c363f8c1b5a91dde28ba4b1c",
+          "https://github.com/rubysec/ruby-advisory-db/blob/master/gems/lodash-rails/CVE-2021-23337.yml",
+          "https://security.netapp.com/advisory/ntap-20210312-0006"
+        ]
+      },
+      "instances": [
+        {
+          "input": "package-lock.json",
+          "version": "4.17.15",
+          "scope": "prod",
+          "direct": true,
+          "declared_in": [],
+          "fixed_versions": [
+            "4.17.21"
+          ],
+          "recommended_fix": "4.17.21",
+          "introduced_by": [
+            {
+              "path": [
+                "shop-api",
+                "lodash@4.17.15"
+              ],
+              "parent": "<root>",
+              "parent_requires": "^4.17.15",
+              "fix_in_range": true
+            }
+          ],
+          "parents_total": 1
+        }
+      ],
+      "baseline_priority": "scheduled",
+      "baseline_reasons": [
+        "CVSS 7.2",
+        "EPSS 0.8%"
+      ],
+      "first_seen": "2026-11-01T01:30:00Z",
+      "age_days": 0,
+      "basis": "21424ddcd0e9e7ae",
+      "analysis_state": "pending",
+      "pending_reason": "new",
+      "change": "initial"
+    },
+    {
+      "finding_id": "F-27998651e6",
+      "lane": "vulnerability",
+      "ecosystem": "npm",
+      "package": "lodash-es",
+      "ids": [
+        "GHSA-p6mc-m468-83gw",
+        "CVE-2020-8203"
+      ],
+      "primary_id": "GHSA-p6mc-m468-83gw",
+      "severity": {
+        "label": "high",
+        "cvss_score": 7.4,
+        "cvss_vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:H"
+      },
+      "exploitation": {
+        "kev": false,
+        "kev_date_added": null,
+        "epss": 0.0231,
+        "epss_percentile": 0.8912
+      },
+      "advisory": {
+        "summary": "Prototype Pollution in lodash",
+        "details": "Versions of lodash prior to 4.17.19 are vulnerable to Prototype Pollution. The functions `pick`, `set`, `setWith`, `update`, `updateWith`, and `zipObjectDeep` allow a malicious user to modify the prototype of Object if the property identifiers are user-supplied. Being affected by this issue requires manipulating objects based on user-provided property values or arrays.\n\nThis vulnerability causes the addition or modification of an existing property that will exist on all objects and may lead to Denial of Service or Code Execution under specific circumstances.",
+        "cwe_ids": [
+          "CWE-1321",
+          "CWE-770"
+        ],
+        "published": "2020-07-15T19:15:48Z",
+        "modified": "2025-08-12T21:43:38Z",
+        "references": [
+          "https://nvd.nist.gov/vuln/detail/CVE-2020-8203",
+          "https://github.com/github/advisory-database/pull/2884",
+          "https://github.com/lodash/lodash/commit/c84fe82760fb2d3e03a63379b297a1cc1a2fce12",
+          "https://github.com/lodash/lodash/issues/4744",
+          "https://github.com/lodash/lodash/issues/4874",
+          "https://github.com/lodash/lodash/wiki/Changelog#v41719"
+        ]
+      },
+      "instances": [
+        {
+          "input": "package-lock.json",
+          "version": "4.17.15",
+          "scope": "dev",
+          "direct": false,
+          "declared_in": [],
+          "fixed_versions": [
+            "4.17.20"
+          ],
+          "recommended_fix": "4.17.20",
+          "introduced_by": [
+            {
+              "path": [
+                "shop-api",
+                "cvescan-fixture-devtool@2.0.0",
+                "lodash-es@4.17.15"
+              ],
+              "parent": "cvescan-fixture-devtool@2.0.0",
+              "parent_requires": "^4.17.15",
+              "fix_in_range": true
+            }
+          ],
+          "parents_total": 1
+        }
+      ],
+      "baseline_priority": "watch",
+      "baseline_reasons": [
+        "CVSS 7.4",
+        "EPSS 2.3%",
+        "只出現在開發用相依套件,降一級"
+      ],
+      "first_seen": "2026-11-01T01:30:00Z",
+      "age_days": 0,
+      "basis": "43c50699cdcb30af",
+      "analysis_state": "pending",
+      "pending_reason": "new",
+      "change": "initial"
+    },
+    {
+      "finding_id": "F-33535ff7bc",
+      "lane": "vulnerability",
+      "ecosystem": "npm",
+      "package": "lodash-es",
+      "ids": [
+        "GHSA-35jh-r3h4-6jhm",
+        "CVE-2021-23337"
+      ],
+      "primary_id": "GHSA-35jh-r3h4-6jhm",
+      "severity": {
+        "label": "high",
+        "cvss_score": 7.2,
+        "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H"
+      },
+      "exploitation": {
+        "kev": false,
+        "kev_date_added": null,
+        "epss": 0.00842,
+        "epss_percentile": 0.7421
+      },
+      "advisory": {
+        "summary": "Command Injection in lodash",
+        "details": "`lodash` versions prior to 4.17.21 are vulnerable to Command Injection via the template function.",
+        "cwe_ids": [
+          "CWE-77",
+          "CWE-94"
+        ],
+        "published": "2021-05-06T16:05:51Z",
+        "modified": "2025-08-12T21:44:24Z",
+        "references": [
+          "https://nvd.nist.gov/vuln/detail/CVE-2021-23337",
+          "https://cert-portal.siemens.com/productcert/pdf/ssa-637483.pdf",
+          "https://github.com/lodash/lodash/blob/ddfd9b11a0126db2302cb70ec9973b66baec0975/lodash.js#L14851",
+          "https://github.com/lodash/lodash/commit/3469357cff396a26c363f8c1b5a91dde28ba4b1c",
+          "https://github.com/rubysec/ruby-advisory-db/blob/master/gems/lodash-rails/CVE-2021-23337.yml",
+          "https://security.netapp.com/advisory/ntap-20210312-0006"
+        ]
+      },
+      "instances": [
+        {
+          "input": "package-lock.json",
+          "version": "4.17.15",
+          "scope": "dev",
+          "direct": false,
+          "declared_in": [],
+          "fixed_versions": [
+            "4.17.21"
+          ],
+          "recommended_fix": "4.17.21",
+          "introduced_by": [
+            {
+              "path": [
+                "shop-api",
+                "cvescan-fixture-devtool@2.0.0",
+                "lodash-es@4.17.15"
+              ],
+              "parent": "cvescan-fixture-devtool@2.0.0",
+              "parent_requires": "^4.17.15",
+              "fix_in_range": true
+            }
+          ],
+          "parents_total": 1
+        }
+      ],
+      "baseline_priority": "watch",
+      "baseline_reasons": [
+        "CVSS 7.2",
+        "EPSS 0.8%",
+        "只出現在開發用相依套件,降一級"
+      ],
+      "first_seen": "2026-11-01T01:30:00Z",
+      "age_days": 0,
+      "basis": "75b1f74a662ecc22",
+      "analysis_state": "pending",
+      "pending_reason": "new",
+      "change": "initial"
+    }
+  ],
+  "pending": [
+    "F-8085ab2cd5",
+    "F-9376dd2c7a",
+    "F-235dcdf6b9",
+    "F-27998651e6",
+    "F-33535ff7bc"
+  ]
+}

@@ -1,0 +1,35 @@
+# cvescan 設定檔。位置:~/.config/cvescan/config.toml
+#
+# 會影響掃描結果的選項只能寫在這裡,不能從指令列帶。
+# 所以只被允許執行 `cvescan <路徑>` 的 agent 沒辦法放寬任何關卡。
+# 下面列的都是預設值。
+
+# 報表使用的語言。
+lang = "zh-TW"
+
+# 漏洞資料庫超過這個時間沒有確認為最新,就拒絕掃描。
+max_db_age_minutes = 60
+
+# true:資料庫過期時照常掃描,但報表會標記 db_stale。離線環境才需要。
+allow_stale_db = false
+
+# 每個專案保留幾次完整的報表與 SBOM。歷程摘要永久保留,不受這個數字影響。
+keep_runs = 10
+
+# status 超過幾天沒掃就提醒。
+stale_scan_days = 7
+
+[update]
+# 新版資訊的網址。留空就不檢查。
+manifest_url = ""
+# 沒有人在場(agent、排程)時,直接套用符合條件的更新。
+auto_update_unattended = true
+# 沒有人在場時,只套用發布滿這麼多天的版本。
+cooldown_days = 3
+
+# 資料來源。一般不需要改。
+[sources]
+osv_base_url = "https://osv-vulnerabilities.storage.googleapis.com"
+kev_url = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+epss_url = "https://epss.empiricalsecurity.com/epss_scores-current.csv.gz"
+eol_url_template = "https://endoflife.date/api/v1/products/{product}/"

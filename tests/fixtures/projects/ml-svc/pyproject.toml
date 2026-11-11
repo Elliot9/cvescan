@@ -1,0 +1,13 @@
+[tool.poetry]
+name = "ml-svc"
+version = "0.3.0"
+description = "fixture"
+authors = ["fixture"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+flask = "^2.0"
+requests = "2.19.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.0"

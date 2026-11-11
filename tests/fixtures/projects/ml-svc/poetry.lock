@@ -1,0 +1,72 @@
+# This file is a test fixture.
+
+[[package]]
+name = "flask"
+version = "2.0.0"
+description = ""
+optional = false
+python-versions = ">=3.6"
+files = []
+
+[package.dependencies]
+Jinja2 = ">=3.0"
+Werkzeug = ">=2.0"
+
+[[package]]
+name = "jinja2"
+version = "3.0.1"
+description = ""
+optional = false
+python-versions = ">=3.6"
+files = []
+
+[package.dependencies]
+MarkupSafe = ">=2.0"
+
+[[package]]
+name = "markupsafe"
+version = "2.0.1"
+description = ""
+optional = false
+python-versions = ">=3.6"
+files = []
+
+[[package]]
+name = "pytest"
+version = "7.0.0"
+description = ""
+optional = false
+python-versions = ">=3.6"
+files = []
+
+[[package]]
+name = "requests"
+version = "2.19.0"
+description = ""
+optional = false
+python-versions = ">=2.6"
+files = []
+
+[package.dependencies]
+urllib3 = ">=1.21.1,<1.24"
+
+[[package]]
+name = "urllib3"
+version = "1.23"
+description = ""
+optional = false
+python-versions = ">=2.6"
+files = []
+
+[[package]]
+name = "werkzeug"
+version = "2.0.1"
+description = ""
+optional = false
+python-versions = ">=3.6"
+files = []
+
+[metadata]
+lock-version = "2.0"
+python-versions = "^3.10"
+content-hash = "fixture"

@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# Fake `docker` for tests. It records every invocation in $DOCKER_STUB_LOG and
+# executes `docker run` natively by mapping the bind mounts back to host
+# paths. It checks nothing about isolation itself; the test reads the log to
+# see which flags and mounts the wrapper asked for.
+set -euo pipefail
+printf '%s\n' "$*" >> "$DOCKER_STUB_LOG"
+case "${1:-}" in
+  info|image|pull) exit 0 ;;
+  run) ;;
+  *) echo "docker stub: unsupported command $1" >&2; exit 64 ;;
+esac
+shift
+SRC=""; DB=""; STATE=""; OUT=""; CONFIG=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --rm|--read-only|-t) shift ;;
+    --tmpfs|--cap-drop|--security-opt|--pids-limit|--user|-e|--network) shift 2 ;;
+    --mount)
+      source="$(printf '%s' "$2" | sed -n 's/.*source=\([^,]*\).*/\1/p')"
+      target="$(printf '%s' "$2" | sed -n 's/.*target=\([^,]*\).*/\1/p')"
+      case "$target" in
+        /src) SRC="$source" ;; /db) DB="$source" ;; /state) STATE="$source" ;;
+        /out) OUT="$source" ;; /config) CONFIG="$source" ;;
+      esac
+      shift 2 ;;
+    *) break ;;
+  esac
+done
+shift                      # image
+sub="$1"; shift
+args=()
+[ -n "$SRC" ] && args+=(--src "$SRC")
+[ -n "$DB" ] && args+=(--db "$DB")
+[ -n "$OUT" ] && args+=(--out "$OUT")
+if [ -n "$STATE" ]; then
+  if [ "$sub" = status ]; then args+=(--state-root "$STATE"); else args+=(--state "$STATE"); fi
+fi
+case "$sub" in sync|scan|status|update-check) args+=(--config "${CONFIG:-/nonexistent}") ;; esac
+exec python3 -m cvescan_core "$sub" ${args[@]+"${args[@]}"} "$@"

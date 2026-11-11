@@ -1,0 +1,8 @@
+.git
+tests
+docs
+skills
+examples
+*.md
+**/__pycache__
+**/*.pyc

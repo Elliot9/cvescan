@@ -1,0 +1,2 @@
+# Shell scripts and lockfile fixtures must keep LF line endings on every platform.
+* text=auto eol=lf

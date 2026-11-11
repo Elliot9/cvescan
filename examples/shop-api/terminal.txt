@@ -1,0 +1,68 @@
+$ cvescan ~/work/shop-api                      # 2026-11-01,第一次掃描
+環境   native(開發模式,沒有隔離)|磁碟 29 GB ✓|cvescan 0.1.0
+[1/3] detect  找到 npm(1 個 lockfile)
+[2/3] sync
+       已更新 npm、KEV、EPSS、EOL nodejs、EOL php、EOL python
+[3/3] scan    1 個 lockfile、8 個套件
+結果   完整
+       未解決 5(立即 1|本週 0|排程 2|觀察 2)
+       首次掃描,之後的報表會列出與上次的差異
+       其中 1 個惡意套件
+       runtime:node 18.20.4 已停止支援
+       runtime:node 22.11.0 落後最新修補版 22.21.0
+報表   ~/cvescan/shop-api/latest/
+下一步 請你的 agent「分析 shop-api 的 CVE 報表」(待分析 5 項)
+
+$ cd ~/cvescan && <agent>「分析 shop-api 的 CVE 報表」  # agent 讀 latest/ANALYZE.md,寫 analysis.json,然後執行:
+$ cvescan verify shop-api
+✓ 通過:這次接受 5 項,全部分析完成
+報告   ~/cvescan/shop-api/latest/analysis.md
+
+$ cvescan ~/work/shop-api                      # 2026-11-04,升級 lodash、移除惡意套件之後
+環境   native(開發模式,沒有隔離)|磁碟 29 GB ✓|cvescan 0.1.0
+[1/3] detect  找到 npm(1 個 lockfile)
+[2/3] sync
+       已是最新 npm、KEV、EPSS、EOL nodejs、EOL php、EOL python
+[3/3] scan    1 個 lockfile、7 個套件
+結果   完整
+       未解決 2(立即 0|本週 0|排程 0|觀察 2)
+       與上次相比:你修掉 3|新公告 0|相依變動 0
+       runtime:node 18.20.4 已停止支援
+       runtime:node 22.11.0 落後最新修補版 22.21.0
+報表   ~/cvescan/shop-api/latest/
+
+$ cvescan ~/work/shop-api                      # 2026-11-06,qs 的新公告發布之後
+環境   native(開發模式,沒有隔離)|磁碟 29 GB ✓|cvescan 0.1.0
+[1/3] detect  找到 npm(1 個 lockfile)
+[2/3] sync
+       已更新 npm、KEV、EPSS、EOL nodejs、EOL php、EOL python
+[3/3] scan    1 個 lockfile、7 個套件
+結果   完整
+       未解決 3(立即 1|本週 0|排程 0|觀察 2)
+       與上次相比:你修掉 0|新公告 1|相依變動 0
+       其中 1 個已知遭利用
+       runtime:node 18.20.4 已停止支援
+       runtime:node 22.11.0 落後最新修補版 22.21.0
+報表   ~/cvescan/shop-api/latest/
+下一步 請你的 agent「分析 shop-api 的 CVE 報表」(待分析 1 項)
+
+$ cvescan verify shop-api                      # agent 只需要分析新增的那一項
+✓ 通過:這次接受 1 項,全部分析完成
+報告   ~/cvescan/shop-api/latest/analysis.md
+
+$ cvescan status shop-api
+shop-api|首次掃描 2026-11-01|共 3 次|AI 分析:已完成
+未解決數趨勢  █▄▅  5 → 3
+
+時間         專案版本      未解決  你修掉  新公告  相依變動  不再掃到  掃描
+11-06 01:05  deps-57a0c8c       3       0       1         0         0  完整
+11-04 02:10  deps-57a0c8c       2       3       0         0         0  完整
+11-01 01:30  deps-5962d5d       5       –       –         –         –  完整(首次)
+
+目前未解決 3:高 3|其中已知遭利用 1
+最久未修:4 天
+近 30 天:你修掉 3,新公告帶來 1,相依變動帶來 0
+
+$ cvescan status
+專案      上次掃描    未解決  近 30 天      待分析  掃描
+shop-api  今天 01:05       3  ↓ 改善中(-2)       0  完整

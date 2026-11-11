@@ -1,0 +1,23 @@
+{
+  "schema_version": "1",
+  "scan_id": "20261106T010500Z-57a0c8",
+  "model": "Claude",
+  "partial": false,
+  "summary": "這次只有一項新的待分析項目,而且是最急的:qs 被新公告點名,並且已列入已知遭利用清單。qs 不是專案直接宣告的,而是 express 帶進來的,express 與 body-parser 都把它鎖在受影響的版本,所以單純更新 lockfile 無效,要升級 express 或用 overrides 指定修補版。先前已分析的兩項 lodash-es 沒有變化,維持觀察。",
+  "findings": [
+    {
+      "finding_id": "F-e9c770be69",
+      "status": "affected",
+      "priority": "now",
+      "justification": null,
+      "context_refs": [],
+      "rationale": "qs 在正式環境,經由 express 與 body-parser 兩條路徑帶入。公告指出,未經驗證的遠端攻擊者只要在網址的查詢字串放入特製內容,就能讓 Node 行程卡住,而這正是 express 解析查詢字串的典型用法。它已列入已知遭利用清單,規則基準就是立即,不能調降。兩個上層都要求固定的受影響版本,修補版不在它們允許的範圍內,所以必須升級 express,或在 package.json 用 overrides 指定修補版。",
+      "action": { "type": "upgrade", "target_version": "6.7.3" },
+      "cited_paths": [
+        ["shop-api", "express@4.17.1", "qs@6.7.0"],
+        ["shop-api", "express@4.17.1", "body-parser@1.19.0", "qs@6.7.0"]
+      ],
+      "questions": []
+    }
+  ]
+}

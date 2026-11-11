@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "cvescan analysis.json",
+  "description": "The form an AI fills in after reading report.json. `cvescan verify` checks it against the report and the SBOM; rules that depend on the report (ids, fixed versions, paths, baseline priority) are enforced there, not in this schema.",
+  "type": "object",
+  "required": ["schema_version", "scan_id", "findings"],
+  "properties": {
+    "schema_version": { "const": "1" },
+    "scan_id": { "type": "string", "description": "Copy of report.scan_id." },
+    "model": { "type": "string", "maxLength": 100 },
+    "partial": { "type": "boolean", "description": "true when this file covers only some of the pending findings." },
+    "summary": { "type": "string", "maxLength": 1200 },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["finding_id", "status", "priority", "rationale", "action"],
+        "properties": {
+          "finding_id": { "type": "string", "pattern": "^F-[0-9a-f]{10}$" },
+          "status": { "enum": ["affected", "under_investigation", "not_affected"] },
+          "priority": { "enum": ["now", "soon", "scheduled", "watch"] },
+          "justification": {
+            "enum": [
+              null,
+              "component_not_present",
+              "vulnerable_code_not_present",
+              "vulnerable_code_not_in_execute_path",
+              "vulnerable_code_cannot_be_controlled_by_adversary",
+              "inline_mitigations_already_exist"
+            ]
+          },
+          "context_refs": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Keys of report.context that justify lowering a priority or a not_affected verdict."
+          },
+          "rationale": { "type": "string", "minLength": 1, "maxLength": 800 },
+          "action": {
+            "type": "object",
+            "required": ["type"],
+            "properties": {
+              "type": { "enum": ["upgrade", "remove", "mitigate", "none"] },
+              "target_version": { "type": "string", "description": "For upgrade: one of the finding's fixed_versions." },
+              "mitigation": { "type": "string", "maxLength": 500, "description": "For mitigate." }
+            }
+          },
+          "cited_paths": {
+            "type": "array",
+            "maxItems": 5,
+            "items": { "type": "array", "minItems": 2, "items": { "type": "string" } }
+          },
+          "questions": {
+            "type": "array",
+            "maxItems": 5,
+            "items": {
+              "type": "object",
+              "required": ["text", "options"],
+              "properties": {
+                "text": { "type": "string", "minLength": 1, "maxLength": 300 },
+                "options": {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 5,
+                  "items": { "type": "string", "minLength": 1, "maxLength": 40 }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,8 +1,9 @@
 """User configuration.
 
-Everything that can change what a scan reports lives here, in a file only the
-user edits. Nothing in this file can be set from the command line, so an agent
-that is allowed to run `cvescan <path>` cannot relax a gate.
+Every gate of a scan lives here, in a file only the user edits. Nothing in
+this file can be set from the command line, so an agent that is allowed to run
+`cvescan <path>` cannot relax a gate. The one scan option on the command line
+is --exclude, which every report it affects records as a note.
 """
 
 from __future__ import annotations

@@ -43,6 +43,30 @@ class DiscoverTest(unittest.TestCase):
             self.assertEqual(extra.ecosystem, "PyPI")
             self.assertTrue(extra.osv_arg.startswith("requirements.txt:"))
 
+    def test_exclude_patterns(self):
+        with tempfile.TemporaryDirectory() as root:
+            lock = {"lockfileVersion": 3, "packages": {"": {}}}
+            write(root, "package-lock.json", lock)
+            write(root, ".worktrees/feature/package-lock.json", lock)
+            write(root, "apps/web/package-lock.json", lock)
+            write(root, "apps/api/requirements.txt", "flask==2.0.0\n")
+            write(root, "docs/requirements.txt", "sphinx==7.0.0\n")
+            rels = lambda *patterns: [lf.rel for lf in L.discover(root, patterns).lockfiles]
+            self.assertEqual(len(rels()), 5)
+            self.assertEqual(rels(".worktrees"), ["apps/api/requirements.txt", "apps/web/package-lock.json", "docs/requirements.txt", "package-lock.json"])
+            self.assertEqual(rels("apps/web"), [".worktrees/feature/package-lock.json", "apps/api/requirements.txt", "docs/requirements.txt", "package-lock.json"])
+            self.assertEqual(rels("requirements.txt", ".work*"), ["apps/web/package-lock.json", "package-lock.json"])
+            self.assertEqual(rels("docs/requirements.txt", "web"), [".worktrees/feature/package-lock.json", "apps/api/requirements.txt", "package-lock.json"])
+            self.assertEqual(len(rels("api/requirements.txt")), 5)
+            tree = L.discover(root, [".worktrees", "docs/requirements.txt"])
+            self.assertEqual(tree.excluded, [".worktrees", "docs/requirements.txt"])
+
+    def test_exclude_pattern_validation(self):
+        self.assertEqual(L.exclude_pattern(".claude/worktrees/"), ".claude/worktrees")
+        for bad in ("", "/abs", "a//b", "a b", "a\nb", "x,y"):
+            with self.assertRaises(ValueError):
+                L.exclude_pattern(bad)
+
     def test_fixture_projects(self):
         tree = L.discover(os.path.join(FIXTURES, "ml-svc"))
         self.assertEqual([lf.rel for lf in tree.lockfiles], ["poetry.lock", "scripts/requirements.txt", "tools/uv.lock"])

@@ -309,15 +309,15 @@ def _from_project_root(lock_rel: str, directory: str) -> str:
     return f"{base}/{directory}" if base else directory
 
 
-def detect(src: str) -> tuple[list[str], int]:
-    tree = lockfiles.discover(src)
+def detect(src: str, exclude=()) -> tuple[list[str], int]:
+    tree = lockfiles.discover(src, exclude)
     return sorted({lf.ecosystem for lf in tree.lockfiles}), len(tree.lockfiles)
 
 
-def run(src: str, db_dir: str, state_dir: str, out_dir: str, cfg: dict, project_name: str, display_out: str | None = None) -> int:
+def run(src: str, db_dir: str, state_dir: str, out_dir: str, cfg: dict, project_name: str, display_out: str | None = None, exclude=()) -> int:
     now = now_utc()
     scanned_at = iso(now)
-    tree = lockfiles.discover(src)
+    tree = lockfiles.discover(src, exclude)
     needed = sorted({lf.ecosystem for lf in tree.lockfiles})
     db_state = gate(sync.load_manifest(db_dir), needed, db_dir, cfg, now)
 
@@ -500,6 +500,13 @@ def run(src: str, db_dir: str, state_dir: str, out_dir: str, cfg: dict, project_
             "kind": "unsafe_names", "path": rel_path,
             "detail": f"有 {rejected.count(rel_path)} 個套件的名稱或版本不像正常的套件識別字,已略過,沒有被掃描",
         })
+    if exclude:
+        if tree.excluded:
+            shown = "、".join(tree.excluded[:5]) + (" 等" if len(tree.excluded) > 5 else "")
+            detail = f"使用者以 --exclude 排除了 {shown},這些路徑沒有被掃描"
+        else:
+            detail = f"使用者指定了 --exclude({'、'.join(exclude)}),但沒有比對到任何路徑"
+        cover["notes"].append({"kind": "excluded_paths", "path": tree.excluded[0] if tree.excluded else "", "detail": detail})
     context, context_warning = load_context(src)
     if context_warning:
         cover["notes"].append({"kind": "context_ignored", "path": CONTEXT_FILE, "detail": context_warning})

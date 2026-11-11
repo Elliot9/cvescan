@@ -8,6 +8,7 @@ formats that actually record that information. Anything else is reported as
 
 from __future__ import annotations
 
+import fnmatch
 import glob
 import json
 import os
@@ -138,18 +139,46 @@ class Tree:
     dockerfiles: list = field(default_factory=list)    # display paths
     dockerfile_abs: dict = field(default_factory=dict)
     vendored_js: list = field(default_factory=list)
+    excluded: list = field(default_factory=list)       # display paths the user's exclude patterns removed
     truncated: bool = False
 
 
-def discover(root: str) -> Tree:
+_EXCLUDE_PATTERN = re.compile(r"[A-Za-z0-9@._*?+-]+(?:/[A-Za-z0-9@._*?+-]+)*/?")
+MAX_EXCLUDED_SHOWN = 50
+
+
+def exclude_pattern(text: str) -> str:
+    """A user-supplied exclude pattern, limited to characters safe to print in a report."""
+    if not _EXCLUDE_PATTERN.fullmatch(text):
+        raise ValueError(f"invalid exclude pattern: {text!r}")
+    return text.rstrip("/")
+
+
+def _excluded(rel: str, patterns) -> bool:
+    """A pattern with a slash matches the path from the project root, one without matches a name at any depth."""
+    name = rel.rsplit("/", 1)[-1]
+    return any(fnmatch.fnmatchcase(rel if "/" in pattern else name, pattern) for pattern in patterns)
+
+
+def discover(root: str, exclude=()) -> Tree:
     root = os.path.abspath(root)
     tree = Tree(root=root)
     used_dirs, used_files = {""}, set()
     shown_dir = {root: ""}
+
+    def skip(real_rel: str) -> bool:
+        if not _excluded(real_rel, exclude):
+            return False
+        if len(tree.excluded) < MAX_EXCLUDED_SHOWN:
+            tree.excluded.append(_UNSAFE_PATH_CHAR.sub("_", real_rel)[:200])
+        return True
+
     for current, dirs, files in os.walk(root, followlinks=False):
         rel_dir = shown_dir[current]
+        real_dir = "" if current == root else os.path.relpath(current, root).replace(os.sep, "/")
         depth = 0 if not rel_dir else rel_dir.count("/") + 1
         dirs[:] = sorted(d for d in dirs if d not in SKIP_DIRS and not os.path.islink(os.path.join(current, d)))
+        dirs[:] = [d for d in dirs if not skip(f"{real_dir}/{d}" if real_dir else d)]
         if depth >= MAX_DEPTH:
             dirs[:] = []
             tree.truncated = True
@@ -162,6 +191,8 @@ def discover(root: str) -> Tree:
             is_requirements = bool(_REQUIREMENTS.fullmatch(name))
             is_dockerfile = name == "Dockerfile" or name.startswith("Dockerfile.") or name.endswith(".Dockerfile")
             if not (known or is_requirements or is_dockerfile or name.endswith(".min.js")):
+                continue
+            if skip(f"{real_dir}/{name}" if real_dir else name):
                 continue
             rel = _shown(f"{rel_dir}/{name}" if rel_dir else name, used_files)
             ecosystem = LOCKFILES.get(name)

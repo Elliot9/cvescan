@@ -11,7 +11,7 @@ import os
 import sys
 
 from . import __version__, config as config_mod, history, scan as scan_mod, sync as sync_mod, update as update_mod, verify as verify_mod
-from .lockfiles import KNOWN_ECOSYSTEMS
+from .lockfiles import KNOWN_ECOSYSTEMS, exclude_pattern
 from .util import Invalid, Refusal, now_utc
 
 
@@ -21,6 +21,7 @@ def _parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("detect", help="list the ecosystems a project uses")
     p.add_argument("--src", default="/src")
+    p.add_argument("--exclude", action="append", default=[], type=exclude_pattern)
 
     p = sub.add_parser("sync", help="update vulnerability data (network, no code)")
     p.add_argument("--db", default="/db")
@@ -35,6 +36,7 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--config", default="/config")
     p.add_argument("--project", required=True)
     p.add_argument("--display-out", default=None)
+    p.add_argument("--exclude", action="append", default=[], type=exclude_pattern)
 
     p = sub.add_parser("verify", help="check analysis.json and render analysis.md")
     p.add_argument("--state", default="/state")
@@ -60,7 +62,7 @@ def main(argv=None) -> int:
             print(__version__)
             return 0
         if args.command == "detect":
-            ecosystems, count = scan_mod.detect(args.src)
+            ecosystems, count = scan_mod.detect(args.src, args.exclude)
             print(count)
             for ecosystem in ecosystems:
                 print(ecosystem)
@@ -69,7 +71,7 @@ def main(argv=None) -> int:
             ecosystems = [e for e in args.ecosystems.split(",") if e]
             return sync_mod.run(args.db, ecosystems, config_mod.load(args.config))
         if args.command == "scan":
-            return scan_mod.run(args.src, args.db, args.state, args.out, config_mod.load(args.config), args.project, args.display_out)
+            return scan_mod.run(args.src, args.db, args.state, args.out, config_mod.load(args.config), args.project, args.display_out, args.exclude)
         if args.command == "verify":
             return verify_mod.run(args.state, args.out, args.display_out)
         if args.command == "status":

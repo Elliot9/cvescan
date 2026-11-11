@@ -178,6 +178,7 @@ EPSS 達 10% 升為 `soon`;medium 與沒有評分的是 `scheduled`;low 是 `wat
 | `os_layer_not_scanned` | 有 Dockerfile:基底映像與 OS 套件不在掃描範圍 |
 | `vendored_files` | 有 `.min.js`:手動複製進來的函式庫無法比對 |
 | `no_reachability` | 沒做可達性分析(每份報表都有) |
+| `excluded_paths` | 使用者用 `--exclude` 排除了一些路徑,這些路徑沒有被掃描 |
 | `context_ignored` | `.cvescan.toml` 有不認得或格式不對的內容,已忽略 |
 | `enrichment_missing`、`enrichment_stale` | KEV 或 EPSS 資料缺少或過期,優先序可能偏低 |
 | `db_stale` | 資料庫過期但設定允許照常掃描 |

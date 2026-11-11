@@ -236,8 +236,12 @@ on how you start it:
   folder.
 - Allow it one command: `cvescan`.
 
-The `cvescan` command accepts no options, so an agent that may only run
-`cvescan` cannot relax a check. If you start the agent inside your project, a
+The gates of a scan (database age, what counts as stale) can only be set in
+`config.toml`, so an agent that may only run `cvescan` cannot relax them. Two
+things it can do are visible afterwards: `--exclude` narrows a scan, and every
+report it affects carries an `excluded_paths` note; `remove --yes` deletes a
+project's reports and history, and the project then disappears from
+`cvescan status`. If you start the agent inside your project, a
 skill can ask it not to read the code but cannot stop it.
 
 ### What `verify` enforces
@@ -280,10 +284,23 @@ name the field it relied on.
 | Command | What it does |
 |---|---|
 | `cvescan <project path>` | detect, sync, scan; writes `~/cvescan/<project>/latest/` |
+| `cvescan <project path> --exclude <pattern>` | the same, leaving out a folder or file; see below |
 | `cvescan --all` | rescans every project scanned before, for scheduled runs |
 | `cvescan verify [project]` | checks the AI's `analysis.json` and renders `analysis.md` |
 | `cvescan status [project]` | overview of all projects, or the history of one |
+| `cvescan remove <project> [--yes]` | deletes a project's reports and history, for example after scanning the wrong folder; your code is not touched |
 | `cvescan --version`, `cvescan --help` | version and usage |
+
+`--exclude` can be repeated. A pattern without `/` matches a folder or file
+name at any depth (`--exclude .worktrees`); a pattern with `/` is matched
+against the path from the project root (`--exclude apps/legacy`). `*` and `?`
+are wildcards. The patterns are remembered for the project, so later scans and
+`cvescan --all` reuse them; `--exclude` again replaces them and `--no-exclude`
+clears them. A report made with excludes says so in a `excluded_paths` note.
+
+`remove` takes the project name shown by `cvescan status`. It asks before
+deleting; `--yes` skips the question and is required when nobody is at the
+terminal.
 
 | Exit code | Meaning |
 |---|---|
@@ -368,8 +385,8 @@ dependency, and the report names the member directory that declares it.
 | `update.cooldown_days` | 3 | unattended runs only take versions at least this old |
 | `[sources]` | public URLs | point these at an internal mirror if you have one |
 
-Settings that change what a scan reports live only in this file. They cannot
-be passed on the command line.
+The gates of a scan live only in this file. They cannot be passed on the
+command line; the only scan option the command takes is `--exclude`.
 
 Folders are set with environment variables: `CVESCAN_HOME` (reports, default
 `~/cvescan`), `CVESCAN_STATE` (databases and history, default
@@ -525,7 +542,8 @@ Common refusals and errors:
 | `拒絕   漏洞資料庫超過 60 分鐘沒有確認為最新` | the upstream could not be reached; fix the network, or set `allow_stale_db = true` for offline use |
 | `拒絕   專案和 cvescan 的資料夾不能互相包含` | the project is inside the reports or state folder, or the other way round |
 | `拒絕   … 是 cvescan 的原始碼資料夾` | the reports folder is a clone of this repository; move the clone, or set `CVESCAN_HOME` |
-| `cvescan 不接受選項` | the command takes no options; settings go in `config.toml` |
+| `cvescan 不接受選項` | unknown option; apart from `--exclude` and `--no-exclude`, settings go in `config.toml` |
+| `排除   …` | these patterns are left out of the scan (`沿用` means they were remembered from an earlier scan) |
 
 ## Update and uninstall
 

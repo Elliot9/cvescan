@@ -347,6 +347,46 @@ run 2026-11-08T05:30:00Z "$CV" "$SHOP"
 hasnt "no update line when current" "更新 "
 write_config ""
 
+echo "== exclude and remove =="
+EX="$W/work/excl-demo"
+EXR="$CVESCAN_HOME/excl-demo/latest"
+cp -R "$SHOP" "$EX"
+mkdir -p "$EX/.worktrees/feature"
+cp "$SHOP/package.json" "$SHOP/package-lock.json" "$EX/.worktrees/feature/"
+run 2026-11-08T05:40:00Z "$CV" "$EX"
+has  "a nested checkout is scanned by default" "2 個 lockfile"
+run 2026-11-08T05:41:00Z "$CV" "$EX" --exclude .worktrees
+code "scan with --exclude exits 0" 0
+has  "excluded folder is left out" "找到 npm(1 個 lockfile)"
+has  "exclude line" "排除   .worktrees"
+eq   "report notes the exclusion" "$EXR/report.json" '[n["path"] for n in r["coverage"]["notes"] if n["kind"]=="excluded_paths"]' "['.worktrees']"
+run 2026-11-08T05:42:00Z "$CV" "$EX"
+has  "exclude is remembered" "排除   .worktrees(沿用"
+has  "remembered exclude applies" "找到 npm(1 個 lockfile)"
+run 2026-11-08T05:43:00Z "$CV" --no-exclude "$EX"
+has  "--no-exclude scans everything again" "2 個 lockfile"
+eq   "no exclusion note afterwards" "$EXR/report.json" '[n for n in r["coverage"]["notes"] if n["kind"]=="excluded_paths"]' "[]"
+run 2026-11-08T05:44:00Z "$CV" "$EX" --exclude "bad pattern"
+code "invalid exclude pattern refused" 2
+run 2026-11-08T05:44:00Z "$CV" "$EX" --exclude a --no-exclude
+code "--exclude with --no-exclude refused" 2
+run 2026-11-08T05:45:00Z "$CV" status
+has  "project listed before remove" "excl-demo"
+run 2026-11-08T05:45:00Z "$CV" remove excl-demo
+code "remove without confirmation refused when unattended" 2
+has  "asks for --yes" "--yes"
+run 2026-11-08T05:45:00Z "$CV" remove ..
+code "remove refuses a path-like name" 2
+run 2026-11-08T05:45:00Z "$CV" remove no-such-project --yes
+code "remove of an unknown project fails" 2
+run 2026-11-08T05:46:00Z "$CV" remove excl-demo --yes
+code "remove exits 0" 0
+has  "remove confirms" "已移除 excl-demo"
+if [ -e "$CVESCAN_HOME/excl-demo" ] || [ -e "$CVESCAN_STATE/projects/excl-demo" ]; then bad "reports and history are gone"; else ok "reports and history are gone"; fi
+if [ -f "$EX/package-lock.json" ] && [ -d "$CVESCAN_HOME/shop-api" ]; then ok "source and other projects untouched"; else bad "source and other projects untouched"; fi
+run 2026-11-08T05:47:00Z "$CV" status
+hasnt "removed project no longer listed" "excl-demo"
+
 echo "== gates =="
 run 2026-11-08T04:00:00Z "$CV" --allow-stale "$SHOP"
 code "options are refused" 2

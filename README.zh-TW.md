@@ -191,7 +191,7 @@ agent 拿到的是報表,不是程式碼。
 - 在報表根目錄(`~/cvescan`)啟動,把它的檔案存取限制在這個資料夾。
 - 指令只放行 `cvescan`。
 
-`cvescan` 不接受任何選項,所以只被允許執行 `cvescan` 的 agent 沒辦法放寬任何檢查。
+掃描的關卡(資料庫多久算過期等)只能寫在 `config.toml`,所以只被允許執行 `cvescan` 的 agent 沒辦法放寬。它做得到的兩件事事後都看得出來:`--exclude` 會縮小掃描範圍,受影響的每份報表都有 `excluded_paths` 註記;`remove --yes` 會刪掉一個專案的報表與歷程,該專案會從 `cvescan status` 消失。
 如果在專案目錄裡啟動 agent,skill 只能要求它不要讀程式碼,擋不住。
 
 ### `verify` 檢查什麼
@@ -227,10 +227,16 @@ AI 要調降優先序只能靠這裡的內容,而且每次都必須指出它依�
 | 指令 | 作用 |
 |---|---|
 | `cvescan <專案路徑>` | detect、sync、scan;寫出 `~/cvescan/<專案>/latest/` |
+| `cvescan <專案路徑> --exclude <樣式>` | 同上,但不掃指定的目錄或檔案,說明見下方 |
 | `cvescan --all` | 重掃所有掃過的專案,給排程用 |
 | `cvescan verify [專案]` | 檢查 AI 的 `analysis.json`,通過後產生 `analysis.md` |
 | `cvescan status [專案]` | 所有專案的總覽,或單一專案的歷程 |
+| `cvescan remove <專案> [--yes]` | 刪除一個專案的報表與歷程,例如掃錯資料夾的時候;不會動到你的程式碼 |
 | `cvescan --version`、`cvescan --help` | 版本與用法 |
+
+`--exclude` 可以重複。不含 `/` 的樣式比對任何一層的目錄或檔案名稱(`--exclude .worktrees`),含 `/` 的從專案根目錄比對(`--exclude apps/legacy`),可用萬用字元 `*` 和 `?`。樣式會記在這個專案上,之後的掃描和 `cvescan --all` 都會沿用;再下一次 `--exclude` 會取代原本的,`--no-exclude` 會清掉。用了排除的報表會有 `excluded_paths` 註記。
+
+`remove` 收的是 `cvescan status` 顯示的專案名稱。刪除前會詢問;`--yes` 不詢問,沒有人在終端機前時必須加。
 
 | 結束代碼 | 意思 |
 |---|---|
@@ -303,7 +309,7 @@ Workspace(monorepo)裡,成員宣告的套件算直接相依,報表會指出是�
 | `update.cooldown_days` | 3 | 沒人在場時,只套用發布滿這麼多天的版本 |
 | `[sources]` | 公開網址 | 有內部鏡像的話改這裡 |
 
-會影響掃描結果的設定只存在這個檔案裡,不能從指令列帶。
+掃描的關卡只存在這個檔案裡,不能從指令列帶;指令列唯一收的掃描選項是 `--exclude`。
 
 資料夾位置用環境變數指定:`CVESCAN_HOME`(報表,預設 `~/cvescan`)、`CVESCAN_STATE`
 (資料庫與歷程,預設 `~/.local/state/cvescan`)、`CVESCAN_CONFIG_DIR`。
@@ -414,7 +420,8 @@ v0.1.0 是概念驗證。目前測過的:
 | `拒絕   漏洞資料庫超過 60 分鐘沒有確認為最新` | 連不到上游;修好網路,離線使用則設 `allow_stale_db = true` |
 | `拒絕   專案和 cvescan 的資料夾不能互相包含` | 專案放在報表或狀態資料夾裡面,或反過來 |
 | `拒絕   … 是 cvescan 的原始碼資料夾` | 報表資料夾是這個 repo 的 clone;把 clone 移走,或設定 `CVESCAN_HOME` |
-| `cvescan 不接受選項` | 這個指令不收選項,設定寫在 `config.toml` |
+| `cvescan 不接受選項` | 不認得的選項;除了 `--exclude` 和 `--no-exclude`,設定寫在 `config.toml` |
+| `排除   …` | 這次掃描不掃這些樣式(有「沿用」表示是之前記住的設定) |
 
 ## 更新與移除
 

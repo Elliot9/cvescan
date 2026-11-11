@@ -5,10 +5,13 @@
 #   cvescan --all              rescan every project scanned before
 #   cvescan verify [project]   check the AI's analysis.json, render analysis.md
 #   cvescan status [project]   overview, or one project's history
+#   cvescan remove <project>   delete a project's reports and history
 #
-# detect, sync and scan involve no AI. This wrapper takes no options that
-# change what a scan reports: those live in the user's config file, so
-# something that is only allowed to run `cvescan <path>` cannot relax a gate.
+# detect, sync and scan involve no AI. The gates of a scan live in the user's
+# config file, so something that is only allowed to run `cvescan <path>`
+# cannot relax one. The one option that changes what a scan reports is
+# --exclude: it is remembered per project and every report it affects says so
+# in an `excluded_paths` note.
 #
 # Each step runs in a container with exactly the access it needs:
 #   detect  code read-only   no network
@@ -38,12 +41,16 @@ cvescan ${VERSION}
 
 用法:
   cvescan <專案路徑>       掃描專案,產出報表與 SBOM
+      --exclude <樣式>     不掃這個目錄或檔案,可重複。不含 / 的樣式比對任何一層的名稱,
+                           含 / 的從專案根目錄比對,可用 * 和 ?。設定會記住,之後的掃描沿用
+      --no-exclude         取消這個專案記住的排除設定
   cvescan --all            重掃所有掃過的專案(給排程用)
   cvescan verify [專案]    檢查 AI 的 analysis.json,通過後產生 analysis.md
   cvescan status [專案]    所有專案的總覽,或單一專案的歷程
+  cvescan remove <專案>    刪除一個專案的報表與歷程(加 --yes 不詢問)
 
 報表位置:${OUT_ROOT}/<專案>/latest/
-設定檔:  ${CONFIG_DIR}/config.toml(會影響掃描結果的選項只能寫在這裡)
+設定檔:  ${CONFIG_DIR}/config.toml(掃描的關卡只能在這裡調整)
 EOF
 }
 
@@ -230,6 +237,13 @@ project_name_for() {  # stable name for a path; a different path with the same b
   printf '%s' "$name"
 }
 
+valid_exclude() { printf '%s' "$1" | grep -Eq '^[A-Za-z0-9@._*?+-]+(/[A-Za-z0-9@._*?+-]+)*/?$'; }
+
+# What the command line said about excludes: keep (reuse what the project
+# remembers), set (replace it with EXCLUDES) or clear.
+EXCLUDE_MODE=keep
+EXCLUDES=()
+
 scan_project() {
   local given="$1" project
   project="$(cd "$given" 2>/dev/null && pwd -P)" || { note "拒絕   找不到專案路徑:${given}"; return 2; }
@@ -265,9 +279,32 @@ scan_project() {
   # shellcheck disable=SC2064
   trap "rm -rf '$lock'" EXIT
 
+  local excludes=() exclude_args=() pattern
+  case "$EXCLUDE_MODE" in
+    set) excludes=("${EXCLUDES[@]}") ;;
+    keep)
+      if [ -f "$state/exclude" ]; then
+        while IFS= read -r pattern; do
+          valid_exclude "$pattern" && excludes+=("$pattern")
+        done < "$state/exclude"
+      fi ;;
+  esac
+  if [ "${#excludes[@]}" -gt 0 ]; then
+    local shown=""
+    for pattern in "${excludes[@]}"; do
+      exclude_args+=("--exclude=$pattern")
+      shown="${shown:+$shown、}$pattern"
+    done
+    if [ "$EXCLUDE_MODE" = keep ]; then
+      note "排除   ${shown}(沿用這個專案記住的設定,--no-exclude 可取消)"
+    else
+      note "排除   ${shown}"
+    fi
+  fi
+
   # [1/3] detect: code read-only, no network. Only ecosystem names come out.
   local detected count="" ecosystems="" line
-  if ! detected="$(core off plain detect "src=${project}:ro" --)"; then
+  if ! detected="$(core off plain detect "src=${project}:ro" -- ${exclude_args[@]+"${exclude_args[@]}"})"; then
     rm -rf "$lock"; trap - EXIT
     note "無效   detect 失敗"
     return 3
@@ -297,9 +334,14 @@ EOF
   # [3/3] scan: code read-only, no network.
   local code=0
   core off tty scan "src=${project}:ro" "db=${STATE_ROOT}/db:ro" "state=${state}" "out=${out}" "config=${CONFIG_DIR}:ro" \
-    -- --project "$name" --display-out "$(display_path "$out")" || code=$?
+    -- --project "$name" --display-out "$(display_path "$out")" ${exclude_args[@]+"${exclude_args[@]}"} || code=$?
   if [ "$code" = 0 ] || [ "$code" = 3 ]; then
     printf '%s\n' "$project" > "$state/path"
+    if [ "${#excludes[@]}" -gt 0 ]; then
+      printf '%s\n' "${excludes[@]}" > "$state/exclude"
+    else
+      rm -f "$state/exclude"
+    fi
   fi
   rm -rf "$lock"; trap - EXIT
   return "$code"
@@ -335,7 +377,32 @@ project_from_cwd() {
   esac
 }
 
-valid_name() { printf '%s' "$1" | grep -Eq '^[A-Za-z0-9._-]+$'; }
+valid_name() { printf '%s' "$1" | grep -Eq '^[A-Za-z0-9_][A-Za-z0-9._-]*$'; }
+
+remove_project() {
+  local name="$1" yes="$2"
+  local state="$STATE_ROOT/projects/$name" out="$OUT_ROOT/$name"
+  [ -d "$state" ] || die "找不到專案 ${name}。用 cvescan status 查看專案名稱"
+  local pid=""
+  [ -f "$state/.lock/pid" ] && pid="$(head -n 1 "$state/.lock/pid")"
+  if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+    die "拒絕   ${name} 正在被另一個 cvescan 掃描(pid ${pid})"
+  fi
+  local source="(未知)"
+  [ -f "$state/path" ] && source="$(head -n 1 "$state/path")"
+  note "專案   ${name}(原始碼:${source},不會被動到)"
+  note "刪除   ${state}"
+  [ -e "$out" ] && note "刪除   ${out}"
+  if [ "$yes" != 1 ]; then
+    [ "$INTERACTIVE" = 1 ] || die "拒絕   沒有人可以確認。確定要刪除請加上 --yes"
+    local answer=""
+    printf '確定要刪除這個專案的報表與歷程嗎?無法復原。 [y/N] '
+    read -r answer || answer=""
+    case "$answer" in y|Y|yes|YES) ;; *) note "已取消"; return 0 ;; esac
+  fi
+  rm -rf -- "$state" "$out"
+  note "已移除 ${name}"
+}
 
 # ---------------------------------------------------------------------------
 [ $# -ge 1 ] || { usage; exit 2; }
@@ -367,19 +434,46 @@ case "$1" in
       core off plain status "state-root=${STATE_ROOT}/projects:ro" "config=${CONFIG_DIR}:ro" --
     fi
     ;;
+  remove)
+    shift
+    name=""; yes=0
+    for arg in "$@"; do
+      case "$arg" in
+        -y|--yes) yes=1 ;;
+        -*) die "用法:cvescan remove <專案> [--yes]" ;;
+        *) [ -z "$name" ] || die "用法:cvescan remove <專案> [--yes]"; name="$arg" ;;
+      esac
+    done
+    [ -n "$name" ] || die "用法:cvescan remove <專案> [--yes]"
+    valid_name "$name" || die "專案名稱不合法:${name}"
+    remove_project "$name" "$yes"
+    ;;
   --all)
     [ $# -eq 1 ] || die "cvescan --all 不接受其他參數"
     preflight
     check_update
     scan_all
     ;;
-  -*)
-    die "cvescan 不接受選項 $1。會影響掃描結果的設定請寫在 ${CONFIG_DIR}/config.toml"
-    ;;
   *)
-    [ $# -eq 1 ] || die "cvescan 一次只接受一個專案路徑。會影響掃描結果的設定請寫在 ${CONFIG_DIR}/config.toml"
+    project_arg=""
+    add_exclude() {
+      [ "$EXCLUDE_MODE" != clear ] || die "--exclude 和 --no-exclude 不能一起用"
+      valid_exclude "$1" || die "--exclude 的樣式不合法:$1(只能用英數字、@ . _ + - / 和萬用字元 * ?)"
+      EXCLUDE_MODE=set
+      EXCLUDES+=("$1")
+    }
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --exclude) [ $# -ge 2 ] || die "--exclude 需要一個目錄或檔案的樣式"; add_exclude "$2"; shift 2 ;;
+        --exclude=*) add_exclude "${1#--exclude=}"; shift ;;
+        --no-exclude) [ "$EXCLUDE_MODE" = keep ] || die "--exclude 和 --no-exclude 不能一起用"; EXCLUDE_MODE=clear; shift ;;
+        -*) die "cvescan 不接受選項 $1。掃描的關卡請寫在 ${CONFIG_DIR}/config.toml" ;;
+        *) [ -z "$project_arg" ] || die "cvescan 一次只接受一個專案路徑"; project_arg="$1"; shift ;;
+      esac
+    done
+    [ -n "$project_arg" ] || die "用法:cvescan <專案路徑> [--exclude <樣式>]..."
     preflight
     check_update
-    scan_project "$1"
+    scan_project "$project_arg"
     ;;
 esac
